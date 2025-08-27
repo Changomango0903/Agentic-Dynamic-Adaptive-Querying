@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  api:
+    build: { context: .., dockerfile: docker/Dockerfile.api }
+    ports: ["8000:8000"]
+    environment: [ "DB_PATH=/data/adaq.db", "STEP_CAP=5", "TOP_K=6", "BUDGET_USD=0.5" ]
+    volumes: [ "adaq_data:/data" ]
+  ui:
+    build: { context: .., dockerfile: docker/Dockerfile.ui }
+    ports: ["8501:8501"]
+    environment: [ "DB_PATH=/data/adaq.db" ]
+    volumes: [ "adaq_data:/data" ]
+    depends_on: [ "api" ]
+volumes: { adaq_data: {} }
