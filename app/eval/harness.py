@@ -1,22 +1,25 @@
-from typing import Dict, List
+import json, asyncio, time
 from pathlib import Path
-import json
-from app.eval.methods import bm25_only, static_rag, multiquery, adaq_loop
+from typing import Dict
+from app.routes.research import research, ResearchReq
+from app.config import settings
 
-DATA = Path(__file__).resolve().parent / "datasets" / "finance.sample.jsonl"
 
-def load_dataset() -> List[Dict]:
-    with open(DATA, "r", encoding="utf-8") as f:
-        return [json.loads(line) for line in f]
+async def _judge_quality(notes: str) -> Dict[str, float]:
+    # Lightweight proxy: length & unique source refs -> pseudo coverage; replace with LLM judge later
+    uniq_refs = len(set([p for p in notes.split() if p.startswith("[") and p.endswith("]")]))
+    return {"coverage_proxy": min(1.0, uniq_refs / 6.0)}
 
-def run_all():
-    ds = load_dataset()[:5]
-    results = {}
-    for name, fn in [("bm25", bm25_only.run),
-                     ("static_rag", static_rag.run),
-                     ("multiquery", multiquery.run),
-                     ("adaq", adaq_loop.run)]:
-        results[name] = [fn(x) for x in ds]
-    # Toy metric = avg #sources per answer (replace with Coverage/NDCG@5 later)
-    metrics = {k: sum(len(vv["sources"]) for vv in v)/max(1,len(v)) for k,v in results.items()}
-    return {"cases": len(ds), "avg_sources": metrics, "notes": "Toy metric = avg #sources per answer"}
+
+async def run_harness(dataset_path: str, methods: list[str]):
+    ds = [json.loads(l) for l in Path(dataset_path).read_text().strip().splitlines()]
+    results = []
+    t0 = time.time()
+    for case in ds:
+        q = case["question"]
+        row = {"id": case["id"], "question": q}
+        if "adaq" in methods:
+            resp = await research(ResearchReq(question=q, company=case.get("company"), year=case.get("year")))
+            row["adaq_trace_id"] = resp.trace_id
+        results.append(row)
+    return {"dataset": dataset_path, "n": len(ds), "seconds": time.time() - t0, "results": results}

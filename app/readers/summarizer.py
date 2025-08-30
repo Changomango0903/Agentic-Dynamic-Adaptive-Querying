@@ -1,8 +1,16 @@
-from typing import List, Dict
+from app.llm.provider import get_llm
+from typing import List
 
-def summarize(docs: List[Dict]) -> List[Dict]:
-    return [{
-        "doc_id": d["id"],
-        "summary": f"{d['title']} — {d['snippet']}",
-        "source": d.get("source") or d.get("url")
-    } for d in docs]
+class Reader:
+    async def notes(self, docs: List[dict]) -> str:
+        """Summarize retrieved docs into bullet notes with source tags [#]."""
+        llm = get_llm()
+        items = []
+        for i, d in enumerate(docs):
+            items.append(f"[{i+1}] {d['title']} — {d['snippet']}")
+        prompt = (
+            "Summarize the following sources into concise bullet points. "
+            "Each point should reference one or more sources using [#] numbers.\n\n" +
+            "\n".join(items)
+        )
+        return await llm.complete("You compress information faithfully.", prompt)

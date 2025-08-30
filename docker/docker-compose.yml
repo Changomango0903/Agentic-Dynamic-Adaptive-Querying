@@ -1,14 +1,25 @@
-version: "3.9"
 services:
   api:
-    build: { context: .., dockerfile: docker/Dockerfile.api }
-    ports: ["8000:8000"]
-    environment: [ "DB_PATH=/data/adaq.db", "STEP_CAP=5", "TOP_K=6", "BUDGET_USD=0.5" ]
-    volumes: [ "adaq_data:/data" ]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    env_file:
+      - ../.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ..:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   ui:
-    build: { context: .., dockerfile: docker/Dockerfile.ui }
-    ports: ["8501:8501"]
-    environment: [ "DB_PATH=/data/adaq.db" ]
-    volumes: [ "adaq_data:/data" ]
-    depends_on: [ "api" ]
-volumes: { adaq_data: {} }
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ui
+    environment:
+      - API_BASE=http://api:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+    volumes:
+      - ..:/app

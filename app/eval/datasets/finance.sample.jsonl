@@ -1,5 +1,5 @@
-{"question":"Top risks facing Tesla in 2025","company":"TSLA","year":2025,"k":6,"step_cap":3}
-{"question":"What threatens Nvidia's margins in 2025?","company":"NVDA","year":2025,"k":6,"step_cap":3}
-{"question":"Key regulatory headwinds for Meta in 2025","company":"META","year":2025,"k":6,"step_cap":3}
-{"question":"What supply chain risks could hit Apple in 2025?","company":"AAPL","year":2025,"k":6,"step_cap":3}
-{"question":"Macro risks to Amazon's retail unit in 2025","company":"AMZN","year":2025,"k":6,"step_cap":3}
+{"id":"tsla_2025_risks","question":"Top risks facing Tesla in 2025","company":"TSLA","year":2025}
+{"id":"aapl_2025_risks","question":"Top risks facing Apple in 2025","company":"AAPL","year":2025}
+{"id":"nvda_2025_risks","question":"Top risks facing NVIDIA in 2025","company":"NVDA","year":2025}
+{"id":"amzn_2025_risks","question":"Top risks facing Amazon in 2025","company":"AMZN","year":2025}
+{"id":"meta_2025_risks","question":"Top risks facing Meta in 2025","company":"META","year":2025}

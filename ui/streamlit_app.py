@@ -1,28 +1,27 @@
-import streamlit as st, sqlite3, json, os
-DB_PATH = os.getenv("DB_PATH","./adaq.db")
+import streamlit as st
+import requests, os
 
-st.set_page_config(page_title="ADAQ-lite Trace Explorer", layout="wide")
-st.title("ADAQ-lite — Trace Explorer")
+API_BASE = os.getenv("API_BASE", "http://localhost:8000")
 
-def runs():
-    with sqlite3.connect(DB_PATH) as c:
-        c.row_factory = sqlite3.Row
-        return c.execute("SELECT run_id, ts, latency, cost FROM runs ORDER BY ts DESC").fetchall()
+st.set_page_config(page_title="ADAQ Trace Viewer", layout="wide")
 
-def steps(run_id):
-    with sqlite3.connect(DB_PATH) as c:
-        c.row_factory = sqlite3.Row
-        return c.execute("SELECT * FROM steps WHERE run_id=? ORDER BY n ASC",(run_id,)).fetchall()
+st.title("ADAQ Trace Explorer")
 
-rs = runs()
-if not rs:
-    st.info("No runs yet. POST /research to create one.")
-else:
-    rid = st.selectbox("Run", [r["run_id"] for r in rs])
-    for s in steps(rid):
-        st.subheader(f"Step {s['n']}")
-        st.write("Queries:", json.loads(s["queries"]))
-        st.write("Coverage:", json.loads(s["coverage"]))
-        st.write("Notes:")
-        for note in json.loads(s["notes"]):
-            st.markdown(f"- **{note['summary']}** — [source]({note['source']})")
+trace_id = st.text_input("Trace ID")
+if st.button("Load") and trace_id:
+    r = requests.get(f"{API_BASE}/trace/{trace_id}")
+    if r.status_code != 200:
+        st.error("Trace not found")
+    else:
+        data = r.json()
+        st.subheader(f"Question: {data['run']['question']}")
+        st.caption(f"Trace: {data['run']['id']} — latency {data['run']['latency_ms']} ms")
+        for step in data["steps"]:
+            with st.expander(f"Step {step['n']} — decision: {step['decision']}"):
+                st.write("**Queries**", step["queries"]) 
+                st.write("**Notes**")
+                st.write(step["notes"])
+                st.write("**Coverage Δ**", step["coverage_delta"])
+                st.write("**Docs**")
+                for d in step["docs"]:
+                    st.markdown(f"- [{d['title']}]({d['url']}) — *{d['source']}*")

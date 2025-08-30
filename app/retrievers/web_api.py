@@ -1,30 +1,29 @@
-from typing import List, Dict
-import hashlib, os
-from app.storage import cache
+from .base import BaseRetriever
+from app.config import settings
+import httpx, asyncio
 
-def _h(s: str) -> str:
-    return hashlib.sha1(s.encode()).hexdigest()[:12]
+class WebRetriever(BaseRetriever):
+    async def _search(self, q: str, k: int):
+        if not settings.TAVILY_API_KEY:
+            return []
+        url = "https://api.tavily.com/search"
+        payload = {"api_key": settings.TAVILY_API_KEY, "query": q, "max_results": k}
+        async with httpx.AsyncClient(timeout=20) as client:
+            r = await client.post(url, json=payload)
+            r.raise_for_status()
+            data = r.json()
+            results = data.get("results", [])
+            out = []
+            for it in results:
+                out.append({
+                    "url": it.get("url"),
+                    "title": it.get("title"),
+                    "snippet": it.get("content", "")[:500],
+                    "source": "web",
+                })
+            return out
 
-def fetch(queries: List[str], k: int = 6) -> List[Dict]:
-    key = "ret:" + _h("|".join(queries)) + f":k={k}"
-    hit = cache.get(key)
-    if hit:
-        return hit
-    # Mock provider (replace with Bing/SerpAPI/NewsAPI)
-    docs = []
-    for i, q in enumerate(queries):
-        docs.append({
-            "id": _h(q+str(i)),
-            "url": f"https://example.com/search?q={i}",
-            "title": f"Result for: {q[:60]}",
-            "snippet": f"Snippet about {q}...",
-            "source": f"https://example.com/article/{_h(q)}",
-        })
-    # Deduplicate by source then cache
-    seen, out = set(), []
-    for d in docs:
-        s = d.get("source") or d.get("url")
-        if s not in seen:
-            seen.add(s); out.append(d)
-    cache.set(key, out[:k], ttl=int(os.getenv("CACHE_TTL_SECS","86400")))
-    return out[:k]
+    async def fetch(self, queries, k):
+        tasks = [self._search(q, k) for q in queries]
+        batches = await asyncio.gather(*tasks)
+        return [d for b in batches for d in b]

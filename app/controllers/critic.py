@@ -1,22 +1,27 @@
 from typing import Dict, List
+from app.policies.facet_seed import FACETS
 
-def init_facets(names: List[str]) -> Dict[str, float]:
-    return {n: 0.0 for n in names}
+class Critic:
+    @staticmethod
+    def delta(before: Dict[str, float], after: Dict[str, float]) -> Dict[str, float]:
+        return {k: max(0.0, after.get(k, 0.0) - before.get(k, 0.0)) for k in FACETS}
 
-def update_coverage(notes: List[dict], facets: Dict[str, float]) -> Dict[str, float]:
-    text = " ".join(n.get("summary","").lower() for n in notes)
-    keys = {
-        "regulation": ["sec","doj","regulator","fine","recall","esg","antitrust"],
-        "supply": ["supplier","factory","production","shortage","logistics","capacity"],
-        "competition": ["competitor","market share","pricing","rival","china"],
-        "macro": ["rates","inflation","recession","fx","oil","tariff","demand"],
-        "legal": ["lawsuit","litigation","class action","settlement","probe"],
-    }
-    for facet, words in keys.items():
-        hits = sum(1 for w in words if w in text)
-        facets[facet] = min(1.0, facets.get(facet,0.0) + 0.15*hits)
-    return facets.copy()
+    def init_coverage(self) -> Dict[str, float]:
+        return {f: 0.0 for f in FACETS}
 
-def next_queries(question: str, coverage: Dict[str, float], history: List[dict]) -> List[str]:
-    holes = sorted([k for k,v in coverage.items() if v < 0.5], key=lambda k: coverage[k])
-    return [f"{question} {h} risks 2025 analysis" for h in holes][:3]
+    def update_coverage(self, notes: str, coverage: Dict[str, float]) -> Dict[str, float]:
+        text = notes.lower()
+        updated = coverage.copy()
+        for facet, kws in FACETS.items():
+            score = updated[facet]
+            hits = sum(1 for kw in kws if kw in text)
+            if hits:
+                # capped incremental score for M1
+                score = min(1.0, score + 0.25 + 0.05 * min(hits, 3))
+            updated[facet] = score
+        return updated
+
+    def next_queries(self, question: str, coverage: Dict[str, float], history_n: int) -> List[str]:
+        # aim at least-covered facet with 2 targeted rewrites
+        target = min(coverage, key=coverage.get)
+        return [f"{question} {target}", f"{question} {target} risks analysis"]

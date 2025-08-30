@@ -1,17 +1,16 @@
-from typing import List, Optional
+from typing import List
 
-def generate_initial_queries(question: str, company: Optional[str]=None, year: Optional[int]=None) -> List[str]:
-    base = " ".join([x for x in [question, company or "", str(year or "")] if x])
-    variants = [
-        base,
-        f"{base} key risks",
-        f"{base} regulation watchdog actions",
-        f"{base} supply chain vulnerabilities",
-        f"{base} competition landscape",
-        f"{base} macro headwinds",
-    ]
-    seen, out = set(), []
-    for q in variants:
-        if q and q not in seen:
-            seen.add(q); out.append(q)
-    return out[:6]
+class Planner:
+    """Heuristic initial query generator.
+    Keeps it simple for M1; can be replaced by learned policy later.
+    """
+    async def initial_queries(self, question: str, company: str | None, year: int | None) -> List[str]:
+        q = question.strip()
+        if company:
+            q += f" {company}"
+        if year:
+            q += f" {year}"
+        seeds = [q]
+        # a couple of facet-aimed rewrites
+        seeds += [f"{q} regulation", f"{q} supply chain", f"{q} competition", f"{q} macro"]
+        return seeds
