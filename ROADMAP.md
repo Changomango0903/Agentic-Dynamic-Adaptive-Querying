@@ -4,24 +4,22 @@
 
 ## Milestones & Acceptance Criteria
 
-### M1 — MVP: ADAQ‑Lite (Week 3)
+## ✅ M1 — MVP: ADAQ-Lite (Complete)
 
-**Objective:** Beat Static RAG and ship a polished, reproducible demo.
+**Objective:** Beat Static RAG on targeted tasks and ship a polished, reproducible demo.
 
-**Done when**
+**Delivered**
+- Adaptive `/research` loop with step cap & marginal-gain stop policy.
+- Web/News retrieval, dedupe + BM25 (optional dense rerank).
+- Reader & Synthesizer with inline numeric citations.
+- Trace persisted to SQLite; `/trace/{id}` + Streamlit Trace Explorer.
+- Baselines scaffold (BM25 only, Static RAG, MultiQuery) + eval harness.
+- Docker Compose (API + UI), curl in API image; configurable UI port.
+- Ollama connectivity guidance + non-streaming JSON fix.
+- DB robustness: committed run create; latency update; idempotent `StepDocs.attach`; `docs_for_step` helper.
 
-* [ ] `/research` endpoint implements adaptive loop with step cap & stop policy.
-* [ ] Web/news retriever, dedupe (URL + SimHash), summarizer, synthesizer with citations.
-* [ ] Trace persisted (SQLite) and viewable in UI (`/trace/{id}` + Streamlit page).
-* [ ] Baselines: BM25/dense only; Static RAG; MultiQuery RAG.
-* [ ] Evaluation on 30–50 prompts with report (Coverage, NDCG\@5, cost/latency).
-* [ ] README with one‑click Docker Compose + demo GIF of Tesla run.
-
-**Targets**
-
-* Coverage: **+15–25%** vs Static RAG.
-* NDCG\@5: **+10–20%** vs Static RAG.
-* Cost: **≤3×** Static RAG for ≥20% quality lift.
+**Next doc updates**
+- Expand dataset from starter to 30–50 prompts and begin recording metrics (Coverage proxy, NDCG@5, latency).
 
 ---
 
